@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -16,20 +15,15 @@ pipeline {
             }
         }
 
-        stage('Frontend Lint') {
+        stage('Frontend Quality Checks') {
             steps {
-                dir('frontend') {
-                    sh 'npm ci'
-                    sh 'npm run lint'
-                }
-            }
-        }
-
-        stage('Frontend Build') {
-            steps {
-                dir('frontend') {
-                    sh 'npm run build'
-                }
+                sh '''
+                    docker run --rm \
+                    -v "$WORKSPACE/frontend:/app" \
+                    -w /app \
+                    node:22-alpine \
+                    sh -c "npm ci && npm run lint && npm run build"
+                '''
             }
         }
 
