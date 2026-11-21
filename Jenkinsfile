@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -32,6 +33,18 @@ pipeline {
             }
         }
 
+        stage('SonarQube Cloud Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('SonarCloud') {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+
         stage('Backend Docker Build') {
             steps {
                 dir('backend') {
@@ -59,3 +72,4 @@ pipeline {
         }
     }
 }
+
