@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nutriflow-frontend
+  namespace: nutriflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nutriflow-frontend
+  template:
+    metadata:
+      labels:
+        app: nutriflow-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: 104360117424.dkr.ecr.ap-south-1.amazonaws.com/nutriflow-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi

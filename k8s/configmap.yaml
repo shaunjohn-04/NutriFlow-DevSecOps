@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nutriflow-config
+  namespace: nutriflow
+data:
+  PORT: "8000"
+  GEMINI_MODEL: "gemini-2.0-flash"

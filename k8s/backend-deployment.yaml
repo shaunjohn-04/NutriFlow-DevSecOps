@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nutriflow-backend
+  namespace: nutriflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nutriflow-backend
+  template:
+    metadata:
+      labels:
+        app: nutriflow-backend
+    spec:
+      containers:
+        - name: backend
+          image: 104360117424.dkr.ecr.ap-south-1.amazonaws.com/nutriflow-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: nutriflow-config
+            - secretRef:
+                name: nutriflow-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

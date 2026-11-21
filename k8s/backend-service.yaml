@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nutriflow-backend-service
+  namespace: nutriflow
+spec:
+  type: ClusterIP
+  selector:
+    app: nutriflow-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
