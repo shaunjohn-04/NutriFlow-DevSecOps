@@ -2,8 +2,11 @@ pipeline {
     agent any
 
     environment {
-        BACKEND_IMAGE = 'nutriflow-backend'
-        FRONTEND_IMAGE = 'nutriflow-frontend'
+        AWS_REGION = 'ap-south-1'
+        ECR_REGISTRY = '104360117424.dkr.ecr.ap-south-1.amazonaws.com'
+
+        BACKEND_IMAGE = '104360117424.dkr.ecr.ap-south-1.amazonaws.com/nutriflow-backend'
+        FRONTEND_IMAGE = '104360117424.dkr.ecr.ap-south-1.amazonaws.com/nutriflow-frontend'
     }
 
     stages {
@@ -17,8 +20,6 @@ pipeline {
 
         stage('Frontend Dependencies') {
             steps {
-                echo 'Installing frontend dependencies'
-
                 sh '''
                     docker run --rm \
                     -v "$WORKSPACE/frontend:/app" \
@@ -31,8 +32,6 @@ pipeline {
 
         stage('Frontend Lint') {
             steps {
-                echo 'Running ESLint code quality analysis'
-
                 catchError(
                     buildResult: 'UNSTABLE',
                     stageResult: 'UNSTABLE'
@@ -50,8 +49,6 @@ pipeline {
 
         stage('Frontend Build') {
             steps {
-                echo 'Building NutriFlow frontend'
-
                 sh '''
                     docker run --rm \
                     -v "$WORKSPACE/frontend:/app" \
@@ -64,8 +61,6 @@ pipeline {
 
         stage('SonarQube Cloud Analysis') {
             steps {
-                echo 'Running SonarQube Cloud analysis'
-
                 script {
                     def scannerHome = tool 'SonarScanner'
 
@@ -78,12 +73,11 @@ pipeline {
 
         stage('Backend Docker Build') {
             steps {
-                echo 'Building NutriFlow backend Docker image'
-
                 dir('backend') {
                     sh '''
                         docker build \
-                        -t ${BACKEND_IMAGE}:${BUILD_NUMBER} .
+                        -t ${BACKEND_IMAGE}:${BUILD_NUMBER} \
+                        -t ${BACKEND_IMAGE}:latest .
                     '''
                 }
             }
@@ -91,29 +85,53 @@ pipeline {
 
         stage('Frontend Docker Build') {
             steps {
-                echo 'Building NutriFlow frontend Docker image'
-
                 dir('frontend') {
                     sh '''
                         docker build \
-                        -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} .
+                        --build-arg VITE_API_URL=/nutriflow \
+                        -t ${FRONTEND_IMAGE}:${BUILD_NUMBER} \
+                        -t ${FRONTEND_IMAGE}:latest .
                     '''
                 }
+            }
+        }
+
+        stage('ECR Login') {
+            steps {
+                sh '''
+                    aws ecr get-login-password \
+                    --region ${AWS_REGION} | \
+                    docker login \
+                    --username AWS \
+                    --password-stdin ${ECR_REGISTRY}
+                '''
+            }
+        }
+
+        stage('Push Images to ECR') {
+            steps {
+                sh '''
+                    docker push ${BACKEND_IMAGE}:${BUILD_NUMBER}
+                    docker push ${BACKEND_IMAGE}:latest
+
+                    docker push ${FRONTEND_IMAGE}:${BUILD_NUMBER}
+                    docker push ${FRONTEND_IMAGE}:latest
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'NutriFlow CI pipeline completed successfully!'
+            echo 'NutriFlow CI pipeline and ECR publishing completed successfully!'
         }
 
         unstable {
-            echo 'NutriFlow pipeline completed with code quality warnings. Review ESLint findings.'
+            echo 'Pipeline completed with code quality warnings. Review ESLint findings.'
         }
 
         failure {
-            echo 'NutriFlow CI pipeline failed. Check the console output.'
+            echo 'NutriFlow pipeline failed. Check the console output.'
         }
 
         always {
